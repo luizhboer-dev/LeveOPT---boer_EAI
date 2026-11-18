@@ -228,7 +228,7 @@ Decisões, contra o PRD do Codex:
   - **Protegidos, nem aparecem**: antivírus, anti-cheat, drivers de áudio, GPU e touchpad, e software de periféricos.
   - **Launchers, chat e navegadores**: marcados no Ultra.
   - **Ferramentas dev** (Docker, JetBrains, Slack): só no Ultra.
-  - **Sincronização de nuvem** (Google Drive, OneDrive, Dropbox): nunca vem marcada, porque o seu Obsidian vive no Google Drive.
+  - **Sincronização de nuvem** (Google Drive, OneDrive, Dropbox): nunca vem marcada, porque parar a sincronização pode atrapalhar quem trabalha com arquivos na nuvem.
   - **Desconhecidos**: aparecem para marcar à mão, com risco médio.
 - **Energia**: plano "Leve Ultimate" com GUID fixo, clonado do Ultimate Performance (ou do Alto desempenho). Só os valores de tomada mudam; a bateria segue o padrão. Desfazer reativa o plano anterior.
 - **Hibernação e Inicialização Rápida**: desligadas só em desktop.
@@ -284,3 +284,29 @@ O agente não pode competir com o jogo. O desenho garante isso:
 - Matar processos.
 - Limitar a RAM de outros processos.
 - Driver em modo kernel.
+
+## 12. v1.2: o que mais pesa além do Windows
+
+| Peça | O que faz | Estado |
+|---|---|---|
+| **Etiquetas de impacto** | Coluna "impacto" na lista (FPS ▲▲, 1%low ▲, latência, carga, ping, RAM, privac., uso) e a faixa típica no detalhe. A confirmação do Game Ultra mostra uma estimativa honesta. O número real vem da tela `> fps`. | escrito |
+| **Estado "feito / pendente"** | Substitui ON/off, que confundia com a caixa de marcar. | escrito |
+| **`> diagnóstico`** | Uma linha por item, com "corrigir" só onde o Leve resolve sozinho. | escrito |
+| **Monitor abaixo da taxa nativa** | Exemplo: 60 Hz num monitor de 165 Hz. O botão "corrigir" passa pelo snapshot e pede **manter** (Enter) ou **voltar** (Esc); sem confirmação, volta sozinho em 15 s, como o Windows. Fica fora de perfil de propósito. | escrito |
+| **RAM sem XMP/EXPO** | Detectada pela velocidade configurada no SMBIOS (DDR4 até 2666, DDR5 até 4800 = padrão). Só orienta; o Leve não mexe no BIOS. Em notebook não aparece. | escrito |
+| **Memória em canal único** | Um pente só em desktop: indica dual channel. | escrito |
+| **Limite de FPS** | Sugestão Hz − 3 com VRR e Reflex/Anti-Lag. Escrever no perfil do driver NVIDIA ficou de fora: exigiria a API NVAPI DRS, pouco documentada. | escrito (orientação) |
+| **Driver de vídeo antigo** | Alerta quando o driver tem mais de 6 meses. | escrito |
+| **Disco quase cheio** | Menos de 10% livre, com destaque se tiver jogos. | escrito |
+
+## 13. Proposta: modo Avançado (v1.3, a decidir)
+
+Um modo separado, desligado por padrão, em que cada item exige **aprovação explícita do risco** e **medição A/B**. Entram só itens com **ganho real e risco real**:
+- desligar as mitigações Spectre/Meltdown;
+- desligar o VBS inteiro (além do HVCI);
+- MSI Mode e afinidade de interrupção por dispositivo;
+- desligar a compressão de memória em PCs com 32 GB ou mais;
+- desligar o SysMain;
+- desligar o Windows Update temporariamente durante o jogo.
+
+Placebo continua fora, mesmo no modo Avançado, porque não há ganho a aprovar: Win32PrioritySeparation, NetworkThrottlingIndex, Timer Resolution global, limpeza de RAM, limpador de Registro.

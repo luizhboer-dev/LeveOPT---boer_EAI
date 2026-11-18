@@ -200,6 +200,15 @@ public sealed class TweakEngine(ISystemAccess system, ISnapshotStore store, stri
             {
                 var current = system.Read(entry.Target);
 
+                if (current.Kind == ValueKind.Missing && entry.Target.Type == TargetType.Display)
+                {
+                    // O modo salvo volta quando o monitor for reconectado: não dá para considerar desfeito.
+                    entry.State = EntryState.RevertFailed;
+                    entry.Message = "monitor desconectado; reconecte e desfaça de novo";
+                    progress?.Report(LogLine.Error($"{entry.Target}: {entry.Message}"));
+                    continue;
+                }
+
                 if (current == entry.Original || current.Kind == ValueKind.Missing)
                 {
                     entry.State = EntryState.Reverted;

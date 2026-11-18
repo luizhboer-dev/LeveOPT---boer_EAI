@@ -41,6 +41,9 @@ public static class HardwareCatalog
             Profiles = Profiles.All,
             Restart = Restart.AppRestart,
             AppliesTo = f => f.HasHybridGpu,
+            Impact = Impact.Fps,
+            Strength = 3,
+            Gain = "0% ou 2×–5×: enorme se o jogo estava rodando na GPU integrada",
             Actions = exes.Select(e => (TweakAction)new SetStringFlags(Target.Reg(HKCU, DirectXPreferences, e), [new("GpuPreference", "2")])).ToList(),
         };
     }
@@ -72,6 +75,8 @@ public static class HardwareCatalog
                 Risk = Risk.Medium,
                 Profiles = Profiles.Ultra,
                 Restart = Restart.Reboot,
+                Impact = Impact.Network,
+                Gain = "menos picos de ping em algumas placas Realtek/Intel; não muda FPS",
                 Note = "a placa reconecta ao reiniciar; em notebook na bateria a rede gasta um pouco mais",
                 Actions = actions,
             });

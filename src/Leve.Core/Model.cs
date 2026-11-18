@@ -6,7 +6,8 @@ namespace Leve.Core;
 public enum Hive { HKLM, HKCU }
 
 /// <summary>Package = app AppX do usuário atual. Power = estado de energia (plano ativo, hibernação).</summary>
-public enum TargetType { Registry, Service, ScheduledTask, Package, Power, DefenderExclusion }
+/// <summary>Display = taxa de atualização (Hz) de um monitor, ex.: \\.\DISPLAY1.</summary>
+public enum TargetType { Registry, Service, ScheduledTask, Package, Power, DefenderExclusion, Display }
 
 public enum ServiceStart { Boot, System, Automatic, AutomaticDelayed, Manual, Disabled }
 
@@ -27,6 +28,7 @@ public sealed record Target(TargetType Type, Hive Hive, string Path, string Name
     public static Target Package(string packageName) => new(TargetType.Package, Hive.HKCU, string.Empty, packageName);
     public static Target Power(string setting) => new(TargetType.Power, Hive.HKLM, string.Empty, setting);
     public static Target DefenderExclusion(string folder) => new(TargetType.DefenderExclusion, Hive.HKLM, folder, string.Empty);
+    public static Target Display(string deviceName) => new(TargetType.Display, Hive.HKLM, string.Empty, deviceName);
 
     /// <summary>Chave de identidade (case-insensitive) usada para deduplicar alvos dentro de um lote.</summary>
     [JsonIgnore]
@@ -37,6 +39,7 @@ public sealed record Target(TargetType Type, Hive Hive, string Path, string Name
         TargetType.Package => $"pkg:{Name}",
         TargetType.Power => $"power:{Name}",
         TargetType.DefenderExclusion => $"excl:{Path.TrimEnd('\\')}",
+        TargetType.Display => $"display:{Name}",
         _ => $"task:{Path}",
     }).ToLowerInvariant();
 
@@ -50,6 +53,7 @@ public sealed record Target(TargetType Type, Hive Hive, string Path, string Name
         TargetType.Package => $"app {Name}",
         TargetType.Power => $"energia: {Name}",
         TargetType.DefenderExclusion => $"Defender ignora {Path}",
+        TargetType.Display => $"monitor {Name} (Hz)",
         _ => $"tarefa {Path}",
     };
 }

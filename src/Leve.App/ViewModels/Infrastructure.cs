@@ -58,6 +58,20 @@ public static class Labels
         _ => area.ToString().ToLowerInvariant(),
     };
 
+    public static string Impact(Impact impact, int strength)
+    {
+        var arrows = new string('▲', Math.Clamp(strength, 1, 3));
+        if (impact.HasFlag(Core.Impact.Fps)) return "FPS " + arrows;
+        if (impact.HasFlag(Core.Impact.Lows)) return "1%low " + arrows;
+        if (impact.HasFlag(Core.Impact.Latency)) return "latência " + arrows;
+        if (impact.HasFlag(Core.Impact.Loading)) return "carga " + arrows;
+        if (impact.HasFlag(Core.Impact.Network)) return "ping " + arrows;
+        if (impact.HasFlag(Core.Impact.Ram)) return "RAM";
+        if (impact.HasFlag(Core.Impact.Privacy)) return "privac.";
+        if (impact.HasFlag(Core.Impact.Comfort)) return "uso";
+        return "—";
+    }
+
     public static string Risk(Risk risk) => risk switch
     {
         Core.Risk.Low => "baixo",

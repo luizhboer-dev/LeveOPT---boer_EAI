@@ -21,6 +21,17 @@ public partial class MainWindow : Window
         };
 
         Loaded += (_, _) => FocusList();
+
+        // Fechar no meio do teste de taxa do monitor: volta a taxa anterior antes de sair.
+        Closing += async (_, e) =>
+        {
+            if (DataContext is MainViewModel { IsDisplayTrialOpen: true } vm)
+            {
+                e.Cancel = true;
+                await vm.RevertDisplayAsync("janela fechada no meio do teste");
+                Close();
+            }
+        };
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;
@@ -38,6 +49,15 @@ public partial class MainWindow : Window
         if (DataContext is not MainViewModel)
         {
             base.OnPreviewKeyDown(e);
+            return;
+        }
+
+        // Confirmação de troca de taxa do monitor: Enter mantém, Esc volta.
+        if (Vm.IsDisplayTrialOpen)
+        {
+            if (e.Key == Key.Enter && !e.IsRepeat) Vm.KeepDisplayCommand.Execute(null);
+            else if (e.Key == Key.Escape) Vm.RevertDisplayCommand.Execute(null);
+            e.Handled = true;
             return;
         }
 

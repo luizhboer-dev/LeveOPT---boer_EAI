@@ -1,7 +1,7 @@
 ﻿# Gera o instalador do Leve: testa, publica os dois executáveis, compila o Setup (Inno Setup 6) e calcula o SHA-256.
 # Uso (na pasta leve-next):
-#   powershell -ExecutionPolicy Bypass -File packaging\build-installer.ps1 -Version 1.1.0
-param([string]$Version = "1.1.0")
+#   powershell -ExecutionPolicy Bypass -File packaging\build-installer.ps1 -Version 1.2.0
+param([string]$Version = "1.2.0")
 
 $ErrorActionPreference = "Stop"
 $packaging = $PSScriptRoot
@@ -36,9 +36,9 @@ if (-not $iscc) { throw "Inno Setup 6 não encontrado. Instale com:  winget inst
 Check "Inno Setup"
 
 Step "4/4 SHA-256"
-$setup = Join-Path $out "Leve-Setup-$Version.exe"
+$setup = Join-Path $out "LeveOPT-Setup-$Version.exe"
 $hash = (Get-FileHash $setup -Algorithm SHA256).Hash
-"$hash  Leve-Setup-$Version.exe" | Set-Content (Join-Path $out "Leve-Setup-$Version.sha256.txt") -Encoding ascii
+"$hash  LeveOPT-Setup-$Version.exe" | Set-Content (Join-Path $out "LeveOPT-Setup-$Version.sha256.txt") -Encoding ascii
 
 Write-Host "`nPronto: $setup" -ForegroundColor Green
 Write-Host "SHA-256: $hash"

@@ -29,6 +29,7 @@ public sealed partial class WindowsSystemAccess : ISystemAccess
                 TargetType.Package => ReadPackage(target.Name),
                 TargetType.Power => ReadPower(target.Name),
                 TargetType.DefenderExclusion => ReadExclusion(target.Path),
+                TargetType.Display => ReadDisplay(target.Name),
                 _ => throw new NotSupportedException(target.Type.ToString()),
             };
         }
@@ -50,6 +51,7 @@ public sealed partial class WindowsSystemAccess : ISystemAccess
                 case TargetType.Package: WritePackage(target.Name, value); break;
                 case TargetType.Power: WritePower(target.Name, value); break;
                 case TargetType.DefenderExclusion: WriteExclusion(target.Path, value); break;
+                case TargetType.Display: WriteDisplay(target.Name, value); break;
                 default: throw new NotSupportedException(target.Type.ToString());
             }
         }

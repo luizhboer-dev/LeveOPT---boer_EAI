@@ -7,6 +7,7 @@
     <AssemblyName>Leve</AssemblyName>
     <RootNamespace>Leve.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\leveopt.ico</ApplicationIcon>
 
     <!-- Um único Leve.exe, dependente do .NET Desktop Runtime 10 (sem runtime embutido = exe pequeno). -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

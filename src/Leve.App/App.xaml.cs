@@ -108,7 +108,21 @@ public partial class App : Application
                 PresentMonRunner.Capture,
                 () => AgentStatus.Load(Path.Combine(dataDir, "agent-status.json")) is { InGame: true, Game: { } current } ? current : null,
                 new CaptureStore(Path.Combine(dataDir, "fps.json")),
-                PresentMonRunner.DownloadPage));
+                PresentMonRunner.DownloadPage),
+            new DiagnosticTools(() =>
+            {
+                var (driverDate, gpuName) = DiagnosticScanner.GpuDriver();
+                return new DiagnosticInput(
+                    DiagnosticScanner.Displays(),
+                    DiagnosticScanner.Memory(),
+                    driverDate,
+                    gpuName,
+                    DiagnosticScanner.Drives(libraryFolders),
+                    facts.IsLaptop,
+                    DateTime.Now);
+            },
+            Path.Combine(dataDir, "display-trial.txt"),
+            (device, hz) => access.Write(Target.Display(device), StateValue.DWord(hz))));
 
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;

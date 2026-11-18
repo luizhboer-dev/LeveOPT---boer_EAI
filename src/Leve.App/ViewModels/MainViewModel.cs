@@ -15,6 +15,9 @@ public enum ProfileKind { Ultra, Dev, Manual }
 /// <summary>Ganchos do agente do Modo Jogo: sincronizar com o estado do ajuste e mostrar o status.</summary>
 public sealed record AgentHooks(Action<TweakStatus> Sync, Func<string> StatusText);
 
+/// <summary>Diagnóstico da v1.2: coleta (monitores, RAM, driver, discos) e o ajuste que corrige a taxa do monitor.</summary>
+public sealed record DiagnosticTools(Func<DiagnosticInput> Collect, string TrialMarkerPath, Action<string, uint> SetDisplayHz);
+
 /// <summary>Medição de FPS com o PresentMon (v1.1).</summary>
 public sealed record FpsTools(
     Func<string?> FindPresentMon,
@@ -36,6 +39,13 @@ public sealed class MainViewModel : ObservableObject
     private bool _measurePending;
     private readonly AgentHooks? _agent;
     private readonly FpsTools? _fps;
+    private readonly DiagnosticTools? _diagnostics;
+    private readonly Dictionary<string, Tweak> _diagnosticFixes = new();
+    private Snapshot? _displayTrial;
+    private DispatcherTimer? _displayTimer;
+    private int _displayCountdown;
+    private string _keepDisplayText = string.Empty;
+    private bool _showKeepDisplay;
     private string _fpsGame = string.Empty;
     private string _fpsSeconds = "60";
     private string _fpsStatus = string.Empty;
@@ -68,8 +78,9 @@ public sealed class MainViewModel : ObservableObject
 
     public MainViewModel(TweakEngine engine, ISnapshotStore store, SystemFacts facts, IEnumerable<Tweak> catalog,
         DiskCleaner cleaner, Func<MetricsReport> captureReport, BaselineStore baselines, string dataDirectory,
-        IEnumerable<LogLine>? bootLog = null, AgentHooks? agent = null, FpsTools? fps = null)
+        IEnumerable<LogLine>? bootLog = null, AgentHooks? agent = null, FpsTools? fps = null, DiagnosticTools? diagnostics = null)
     {
+        _diagnostics = diagnostics;
         _agent = agent;
         _fps = fps;
         _engine = engine;
@@ -101,6 +112,7 @@ public sealed class MainViewModel : ObservableObject
             var count = Items.Count(i => i.Tweak.Area == area);
             if (count > 0) Nav.Add(new NavItemVm(this, Labels.Area(area), area, NavKind.Tweaks, count));
         }
+        Nav.Add(new NavItemVm(this, "diagnóstico", null, NavKind.Diagnostics, 0));
         Nav.Add(new NavItemVm(this, "relatório", null, NavKind.Report, 0));
         Nav.Add(new NavItemVm(this, "fps", null, NavKind.Fps, 0));
         Nav.Add(new NavItemVm(this, "limpeza", null, NavKind.Cleanup, 0));
@@ -135,6 +147,7 @@ public sealed class MainViewModel : ObservableObject
             if (IsBusy) return;
             if (ShowCleanup) await MeasureCleanupAsync();
             else if (ShowReport) await MeasureReportAsync();
+            else if (ShowDiagnostics) await RunDiagnosticsAsync();
             else await RefreshStatusesAsync();
         });
         CleanCommand = new RelayCommand(_ => _ = CleanAsync());
@@ -142,6 +155,9 @@ public sealed class MainViewModel : ObservableObject
         SetBaselineCommand = new RelayCommand(_ => SetBaseline());
         CopyReportCommand = new RelayCommand(_ => CopyReport());
         OpenDevDriveCommand = new RelayCommand(_ => OpenDevDrive());
+        FixDiagnosticCommand = new RelayCommand(p => { if (p is DiagnosticItemVm d) _ = FixDiagnosticAsync(d); });
+        KeepDisplayCommand = new RelayCommand(_ => KeepDisplay());
+        RevertDisplayCommand = new RelayCommand(_ => _ = RevertDisplayAsync("você pediu para voltar"));
         CaptureACommand = new RelayCommand(_ => _ = CaptureAsync(CaptureLabel.A));
         CaptureBCommand = new RelayCommand(_ => _ = CaptureAsync(CaptureLabel.B));
         OpenPresentMonPageCommand = new RelayCommand(_ => OpenUrl(_fps?.DownloadPage));
@@ -253,6 +269,7 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ShowCleanup));
             OnPropertyChanged(nameof(ShowReport));
             OnPropertyChanged(nameof(ShowFps));
+            OnPropertyChanged(nameof(ShowDiagnostics));
             OnPropertyChanged(nameof(ShowDetails));
         }
     }
@@ -262,6 +279,14 @@ public sealed class MainViewModel : ObservableObject
     public bool ShowCleanup => CurrentNav == NavKind.Cleanup;
     public bool ShowReport => CurrentNav == NavKind.Report;
     public bool ShowFps => CurrentNav == NavKind.Fps;
+    public bool ShowDiagnostics => CurrentNav == NavKind.Diagnostics;
+
+    public ObservableCollection<DiagnosticItemVm> DiagnosticItems { get; } = [];
+    public RelayCommand FixDiagnosticCommand { get; }
+    public RelayCommand KeepDisplayCommand { get; }
+    public RelayCommand RevertDisplayCommand { get; }
+    public bool ShowKeepDisplay { get => _showKeepDisplay; private set => Set(ref _showKeepDisplay, value); }
+    public string KeepDisplayText { get => _keepDisplayText; private set => Set(ref _keepDisplayText, value); }
 
     public string FpsGame { get => _fpsGame; set => Set(ref _fpsGame, value?.Trim() ?? string.Empty); }
     public string FpsSeconds { get => _fpsSeconds; set => Set(ref _fpsSeconds, value ?? string.Empty); }
@@ -325,6 +350,7 @@ public sealed class MainViewModel : ObservableObject
             if (ShowSnapshots) return $"~/snapshots  {Snapshots.Count} registros";
             if (ShowReport) return "~/relatório  antes × agora (menor é melhor em tudo)";
             if (ShowFps) return "~/fps  A sem otimização × B com otimização";
+            if (ShowDiagnostics) return "~/diagnóstico  o que mais pesa no seu PC além do Windows";
             if (ShowCleanup)
             {
                 var total = CleanupItems.Where(c => c.IsChecked).Sum(c => c.Size ?? 0);
@@ -346,6 +372,7 @@ public sealed class MainViewModel : ObservableObject
         if (interrupted > 0)
             AddLog(LogLine.Warn($"{interrupted} lote(s) interrompido(s) encontrado(s). Veja em snapshots e desfaça se quiser."));
         AddLog(LogLine.Info("perfil Game Ultra pré-selecionado · enter aplica · espaço marca · / filtra · u desfaz · ? ajuda"));
+        await RecoverDisplayTrialAsync();
 
         // A referência "antes" é medida ANTES de qualquer aplicação possível (IsBusy segura o Enter).
         if (_baselines.Load() is null)
@@ -382,6 +409,7 @@ public sealed class MainViewModel : ObservableObject
         if (nav.Kind == NavKind.Cleanup && CleanupItems.Any(c => c.Size is null)) _ = MeasureCleanupAsync();
         if (nav.Kind == NavKind.Report) _ = MeasureReportAsync();
         if (nav.Kind == NavKind.Fps) PrepareFps();
+        if (nav.Kind == NavKind.Diagnostics) _ = RunDiagnosticsAsync();
         ItemsView.Refresh();
         OnPropertyChanged(nameof(Header));
     }
@@ -472,6 +500,172 @@ public sealed class MainViewModel : ObservableObject
             AddLog(LogLine.Error($"não foi possível abrir as Configurações: {ex.Message}"));
         }
     }
+
+    // ── Diagnóstico (v1.2) ───────────────────────────────────────────────────
+
+    private async Task RunDiagnosticsAsync()
+    {
+        if (_diagnostics is null || IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            var input = await Task.Run(_diagnostics.Collect);
+            _diagnosticFixes.Clear();
+            foreach (var display in input.Displays.Where(d => d.BelowMax))
+            {
+                var fix = Diagnostics.RefreshTweak(display);
+                _diagnosticFixes[fix.Id] = fix;
+            }
+
+            DiagnosticItems.Clear();
+            foreach (var item in Diagnostics.Build(input)) DiagnosticItems.Add(new DiagnosticItemVm(item));
+            var warnings = DiagnosticItems.Count(d => d.Level == DiagnosticLevel.Warn);
+            AddLog(warnings == 0 ? LogLine.Ok("diagnóstico: nada crítico encontrado") : LogLine.Warn($"diagnóstico: {warnings} ponto(s) de atenção"));
+        }
+        catch (Exception ex)
+        {
+            AddLog(LogLine.Error($"falha no diagnóstico: {ex.Message}"));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>Corrige pelo motor (snapshot + desfazer) e pede confirmação na tela, como o Windows faz ao trocar o modo de vídeo.</summary>
+    private async Task FixDiagnosticAsync(DiagnosticItemVm item)
+    {
+        if (IsBusy || ShowKeepDisplay || item.Item.FixTweakId is not { } id || !_diagnosticFixes.TryGetValue(id, out var tweak)) return;
+        IsBusy = true;
+        var trialStarted = false;
+        try
+        {
+            var progress = new Progress<LogLine>(AddLog);
+            var plan = await Task.Run(() => _engine.BuildPlan([tweak]));
+            var snapshot = await Task.Run(() => _engine.Apply(plan, tweak.Title, progress));
+            if (snapshot is null)
+            {
+                AddLog(LogLine.Warn("nada a mudar: o monitor já está nessa taxa"));
+                return;
+            }
+            // Mesmo "Partial" (driver arredondou 164/165) o modo pode ter mudado: o teste abre do mesmo jeito.
+            SaveTrialMarker(snapshot.Id);
+
+            _displayTrial = snapshot;
+            trialStarted = true; // o app fica ocupado até manter/voltar: nada concorre com a volta automática
+            _displayCountdown = 15;
+            KeepDisplayText = $"A imagem está boa? Volta sozinho em {_displayCountdown} s.";
+            ShowKeepDisplay = true;
+            _displayTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _displayTimer.Tick += (_, _) =>
+            {
+                _displayCountdown--;
+                KeepDisplayText = $"A imagem está boa? Volta sozinho em {_displayCountdown} s.";
+                if (_displayCountdown <= 0) _ = RevertDisplayAsync("sem confirmação em 15 s");
+            };
+            _displayTimer.Start();
+        }
+        catch (Exception ex)
+        {
+            AddLog(LogLine.Error($"falha ao corrigir: {ex.Message}"));
+        }
+        finally
+        {
+            if (!trialStarted) IsBusy = false;
+        }
+    }
+
+    private void KeepDisplay()
+    {
+        if (_displayTrial is null) return;
+        if (_displayCountdown > 13) return; // Enter nos 2 primeiros segundos pode ser o mesmo que abriu: só aceita depois
+        StopDisplayTimer();
+        AddLog(LogLine.Ok($"mantido: {_displayTrial.Label} · desfazer em > snapshots"));
+        _displayTrial = null;
+        DeleteTrialMarker();
+        ShowKeepDisplay = false;
+        IsBusy = false;
+        LoadSnapshots();
+        _ = RunDiagnosticsAsync();
+    }
+
+    /// <summary>Volta a taxa original. Usada pelo Esc, pelo fim dos 15 s e ao fechar a janela no meio do teste.</summary>
+    public async Task RevertDisplayAsync(string reason)
+    {
+        if (_displayTrial is not { } trial) return;
+        StopDisplayTimer();
+        ShowKeepDisplay = false;
+        AddLog(LogLine.Warn($"voltando o monitor ({reason})"));
+        try
+        {
+            var result = await RevertAsync(trial, null, force: true);
+            if (result?.Status != SnapshotStatus.Reverted) ForceOriginalRate(trial);
+            DeleteTrialMarker();
+        }
+        catch (Exception ex)
+        {
+            AddLog(LogLine.Error($"não foi possível voltar a taxa: {ex.Message}"));
+        }
+        finally
+        {
+            _displayTrial = null;
+            IsBusy = false;
+        }
+        _ = RunDiagnosticsAsync();
+    }
+
+    /// <summary>Se o driver arredondou a taxa, o desfazer normal "preserva" o valor: aqui grava o original direto.</summary>
+    private void ForceOriginalRate(Snapshot trial)
+    {
+        if (_diagnostics is null) return;
+        foreach (var entry in trial.Entries.Where(e => e.Target.Type == TargetType.Display && e.Original.Kind == ValueKind.DWord))
+        {
+            _diagnostics.SetDisplayHz(entry.Target.Name, uint.Parse(entry.Original.Data!, CultureInfo.InvariantCulture));
+            AddLog(LogLine.Ok($"{entry.Target} ← {entry.Original}"));
+        }
+    }
+
+    private void SaveTrialMarker(int snapshotId)
+    {
+        if (_diagnostics is null) return;
+        try { File.WriteAllText(_diagnostics.TrialMarkerPath, snapshotId.ToString(CultureInfo.InvariantCulture)); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+    }
+
+    private void DeleteTrialMarker()
+    {
+        if (_diagnostics is null) return;
+        try { File.Delete(_diagnostics.TrialMarkerPath); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+    }
+
+    /// <summary>O Leve fechou/travou no meio de um teste de taxa: ao abrir de novo, volta a taxa anterior.</summary>
+    private async Task RecoverDisplayTrialAsync()
+    {
+        if (_diagnostics is null || !File.Exists(_diagnostics.TrialMarkerPath)) return;
+        try
+        {
+            if (int.TryParse(File.ReadAllText(_diagnostics.TrialMarkerPath), out var id)
+                && _store.List().FirstOrDefault(s => s.Id == id) is { CanRevert: true } trial)
+            {
+                AddLog(LogLine.Warn("o Leve fechou no meio do teste de taxa do monitor: voltando a taxa anterior"));
+                _displayTrial = trial;
+                await RevertDisplayAsync("recuperação");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+        DeleteTrialMarker();
+    }
+
+    private void StopDisplayTimer()
+    {
+        _displayTimer?.Stop();
+        _displayTimer = null;
+    }
+
+    public bool IsDisplayTrialOpen => ShowKeepDisplay;
 
     // ── FPS (PresentMon): nada roda sobre o jogo; só o resultado no fim ──────
 
@@ -796,6 +990,14 @@ public sealed class MainViewModel : ObservableObject
         if (plan.Issues.Count > 0)
             sb.AppendLine($"{plan.Issues.Count} alvos não puderam ser lidos e serão pulados");
 
+        // Estimativa honesta: onde o ganho costuma aparecer. O número real vem da tela > fps.
+        sb.AppendLine();
+        sb.AppendLine("ganho esperado (estimativa; o número real você mede em > fps):");
+        foreach (var big in active.Where(t => t.Strength >= 2 && (t.Impact & (Impact.Fps | Impact.Loading)) != 0))
+            sb.AppendLine($"  ▲ {big.Title}: {big.Gain}");
+        sb.AppendLine("  engasgos, 1% low e RAM livre: onde a melhora costuma aparecer");
+        sb.AppendLine("  FPS médio: 0–5% típico; 5–15% quando a CPU ou programas de fundo eram o gargalo");
+
         return sb.ToString().TrimEnd();
     }
 
@@ -896,15 +1098,17 @@ public sealed class MainViewModel : ObservableObject
             await RevertAsync(snapshot, e => e.TweakIds.Count == 1 && e.TweakIds[0] == id);
     }
 
-    private async Task RevertAsync(Snapshot snapshot, Func<SnapshotEntry, bool>? filter)
+    private async Task<Snapshot?> RevertAsync(Snapshot snapshot, Func<SnapshotEntry, bool>? filter, bool force = false)
     {
-        if (IsBusy) return;
+        if (IsBusy && !force) return null;
         IsBusy = true;
+        Snapshot? reverted = null;
         try
         {
             AddLog(LogLine.Info($"desfazendo snapshot #{snapshot.Id:D4}{(filter is null ? string.Empty : " (só o ajuste selecionado)")}"));
             var progress = new Progress<LogLine>(AddLog);
             var result = await Task.Run(() => _engine.Revert(snapshot, progress, filter));
+            reverted = result;
             await Task.Yield();
 
             var drifted = result.Entries.Count(e => e.State == EntryState.Drifted);
@@ -924,6 +1128,7 @@ public sealed class MainViewModel : ObservableObject
             LoadSnapshots();
             await RefreshStatusesAsync();
         }
+        return reverted;
     }
 
     // ── Leituras ─────────────────────────────────────────────────────────────

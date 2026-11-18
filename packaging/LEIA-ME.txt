@@ -1,12 +1,12 @@
-﻿LEVE — otimizador de Windows 11 para jogos
-==========================================
+﻿LeveOPT — otimizador de Windows 11 para jogos · by boer_eAI
+========================================================
 
 ANTES DE INSTALAR
 - O Leve não tem assinatura digital (é distribuído só entre amigos). O Windows vai mostrar
   "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo".
 - Confira se o instalador é o original: o código SHA-256 dele deve ser igual ao que o seu amigo
   te mandou por OUTRO canal (ex.: arquivo pelo Drive, código pelo WhatsApp). No PowerShell:
-      Get-FileHash .\Leve-Setup-x.y.z.exe -Algorithm SHA256
+      Get-FileHash .\LeveOPT-Setup-x.y.z.exe -Algorithm SHA256
 - O Leve precisa do .NET Desktop Runtime 10. O instalador tenta instalar sozinho; se não
   conseguir, abre a página de download.
 
@@ -17,7 +17,7 @@ COMO USAR
 3. Reinicie o PC.
 4. Veja o ganho em  > relatório  (antes × agora).
 5. FPS de verdade:  > fps  (precisa do PresentMon-2.x.y-x64.exe na pasta do Leve,
-   em C:\Program Files\Leve). Faça a captura A sem otimização e a B com otimização,
+   em C:\Program Files\LeveOPT). Faça a captura A sem otimização e a B com otimização,
    no mesmo lugar do jogo.
 
 DESFAZER

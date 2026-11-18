@@ -16,7 +16,41 @@ public static class Catalog
     private const string ContentDelivery = CurrentVersion + @"\ContentDeliveryManager";
     private const string DirectXPrefs = @"Software\Microsoft\DirectX\UserGpuPreferences";
 
-    public static IReadOnlyList<Tweak> All { get; } = Build();
+    public static IReadOnlyList<Tweak> All { get; } = Build().Select(Annotate).ToList();
+
+    /// <summary>
+    /// Etiqueta de impacto e faixa típica por ajuste. Faixas vêm de testes públicos e dependem do gargalo
+    /// (GPU em 99% = quase nada muda no FPS médio). Método, não campo estático: roda antes de qualquer campo.
+    /// </summary>
+    private static Tweak Annotate(Tweak t)
+    {
+        (Impact Impact, int Strength, string Gain) a = t.Id switch
+        {
+            "privacy.telemetry" => (Impact.Ram | Impact.Privacy, 1, "menos CPU/disco de fundo; ≈0% no FPS médio"),
+            "privacy.recall" => (Impact.Lows | Impact.Privacy, 2, "Recall captura a tela o tempo todo: corta CPU e disco de fundo"),
+            "privacy.copilot" => (Impact.Ram | Impact.Privacy, 1, "menos processos; ≈0% no FPS"),
+            "privacy.start-web-search" => (Impact.Privacy | Impact.Comfort, 1, "Iniciar responde mais rápido; ≈0% no FPS"),
+            "background.store-apps" => (Impact.Ram | Impact.Lows, 1, "menos apps acordando durante o jogo"),
+            "background.delivery-optimization" => (Impact.Network, 1, "para de usar sua banda para enviar atualizações"),
+            "services.search-indexer" => (Impact.Lows, 1, "sem picos de disco/CPU da indexação durante o jogo"),
+            "gaming.game-mode" => (Impact.Lows, 1, "segura o Windows Update e tarefas durante a partida"),
+            "gaming.game-dvr" => (Impact.Fps | Impact.Lows, 1, "0–3% (se a gravação de fundo estava ligada)"),
+            "gaming.gamebar-controller" => (Impact.Comfort, 1, "evita a Game Bar abrir por cima do jogo"),
+            "gaming.hags" => (Impact.Fps | Impact.Latency, 1, "−2% a +5%; obrigatório para Frame Generation"),
+            "gaming.windowed-optimizations" => (Impact.Latency | Impact.Fps, 1, "0–5% em DX11 janela/borderless, menos latência"),
+            "gaming.vrr" => (Impact.Latency, 1, "fluidez com monitor VRR"),
+            "gaming.mouse-acceleration" => (Impact.Comfort, 1, "mira consistente (não muda FPS)"),
+            "gaming.mpo-off" => (Impact.Lows, 1, "situacional: corrige flicker/stutter em multi-monitor NVIDIA"),
+            "power.leve-plan" => (Impact.Fps | Impact.Lows, 2, "0–5%; mais em CPU que reduzia o clock (core parking)"),
+            "power.hibernate" => (Impact.Comfort, 1, "libera GBs de disco e garante boot limpo; ≈0% no FPS"),
+            "security.hvci" => (Impact.Fps, 2, "0–10% em jogos limitados pela CPU"),
+            _ when t.Area is Area.Privacy => (Impact.Privacy, 1, "privacidade; ≈0% no FPS"),
+            _ when t.Area is Area.Visual => (Impact.Comfort, 1, "interface mais ágil; ≈0% no FPS do jogo"),
+            _ when t.Area is Area.Services or Area.Background or Area.Apps => (Impact.Ram, 1, "menos processos e RAM ociosa; ≈0% no FPS médio"),
+            _ => (Impact.None, 1, "sem estimativa"),
+        };
+        return t with { Impact = a.Impact, Strength = a.Strength, Gain = a.Gain };
+    }
 
     public static Tweak? Find(string id) => All.FirstOrDefault(t => t.Id == id);
 

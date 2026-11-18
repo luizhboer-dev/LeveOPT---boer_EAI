@@ -1,7 +1,7 @@
 <Window x:Class="Leve.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Leve" Width="1120" Height="740" MinWidth="880" MinHeight="580"
+        Title="LeveOPT" Width="1120" Height="740" MinWidth="880" MinHeight="580"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource FgBrush}"
         FontFamily="{StaticResource Mono}" FontSize="13"
@@ -18,17 +18,22 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="40" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="110" />
-                    <ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="104" />
                     <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="80" />
                 </Grid.ColumnDefinitions>
                 <CheckBox Style="{StaticResource TermCheck}" IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}" />
-                <TextBlock Grid.Column="1" Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" Text="{Binding AreaLabel}" Foreground="{StaticResource MutedBrush}" />
-                <TextBlock x:Name="RiskText" Grid.Column="3" Text="{Binding RiskLabel}" Foreground="{StaticResource GreenBrush}" />
-                <TextBlock x:Name="StateText" Grid.Column="4" Text="{Binding StatusLabel}" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" TextTrimming="CharacterEllipsis" Margin="0,0,10,0" />
+                <TextBlock Grid.Column="2" Text="{Binding AreaLabel}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="ImpactText" Grid.Column="3" Text="{Binding ImpactLabel}" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock x:Name="RiskText" Grid.Column="4" Text="{Binding RiskLabel}" Foreground="{StaticResource GreenBrush}" />
+                <TextBlock x:Name="StateText" Grid.Column="5" Text="{Binding StatusLabel}" Foreground="{StaticResource MutedBrush}" />
             </Grid>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsBigImpact}" Value="True">
+                    <Setter TargetName="ImpactText" Property="Foreground" Value="{StaticResource BrightBrush}" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Risk}" Value="Medium">
                     <Setter TargetName="RiskText" Property="Foreground" Value="{StaticResource AmberBrush}" />
                 </DataTrigger>
@@ -145,7 +150,8 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                         <TextBlock Text="●" Foreground="{StaticResource GreenBrush}" />
                         <TextBlock Text=" leve" Foreground="{StaticResource BrightBrush}" />
-                        <TextBlock Text=" v1.0-m1" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Text="opt" Foreground="{StaticResource GreenBrush}" />
+                        <TextBlock Text=" v1.2 · by boer_eAI" Foreground="{StaticResource MutedBrush}" />
                         <TextBlock Text="   perfil: " Foreground="{StaticResource MutedBrush}" />
                         <TextBlock Text="{Binding ProfileLabel}" Foreground="{StaticResource BrightBrush}" />
                     </StackPanel>
@@ -261,14 +267,16 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="110" />
-                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="104" />
                             <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="80" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="1" Text="ajuste" Foreground="{StaticResource MutedBrush}" />
                         <TextBlock Grid.Column="2" Text="módulo" Foreground="{StaticResource MutedBrush}" />
-                        <TextBlock Grid.Column="3" Text="risco" Foreground="{StaticResource MutedBrush}" />
-                        <TextBlock Grid.Column="4" Text="estado" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="3" Text="impacto" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="4" Text="risco" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="5" Text="estado" Foreground="{StaticResource MutedBrush}" />
                     </Grid>
 
                     <!-- Lista de ajustes -->
@@ -285,6 +293,39 @@
                              ItemTemplate="{StaticResource SnapshotRow}"
                              ItemContainerStyle="{StaticResource TermItem}"
                              Visibility="{Binding ShowSnapshots, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Diagnóstico (v1.2): uma linha por item; "corrigir" só onde o Leve consegue resolver sozinho. -->
+                    <ItemsControl Grid.Row="1" Grid.RowSpan="3" Margin="0,12,0,0" ItemsSource="{Binding DiagnosticItems}"
+                                  Visibility="{Binding ShowDiagnostics, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="24" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="Sym" Text="{Binding Symbol}" Foreground="{StaticResource MutedBrush}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Detail}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Style="{StaticResource PrimaryButton}" Margin="10,0,0,0" VerticalAlignment="Top"
+                                            Content="corrigir" CommandParameter="{Binding}"
+                                            Command="{Binding DataContext.FixDiagnosticCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Visibility="{Binding CanFix, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Level}" Value="Ok">
+                                        <Setter TargetName="Sym" Property="Foreground" Value="{StaticResource GreenBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Level}" Value="Warn">
+                                        <Setter TargetName="Sym" Property="Foreground" Value="{StaticResource AmberBrush}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <!-- FPS: deliberadamente mínimo. Nada sobre o jogo; só o resultado no fim. -->
                     <StackPanel Grid.Row="1" Grid.RowSpan="3" Margin="0,12,0,0" Visibility="{Binding ShowFps, Converter={StaticResource BoolToVis}}">
@@ -372,6 +413,7 @@
                                 <TextBlock Text="{Binding SelectedItem.Title}" Foreground="{StaticResource BrightBrush}" />
                                 <TextBlock Text="{Binding SelectedItem.MetaLine}" Foreground="{StaticResource MutedBrush}" />
                                 <TextBlock Text="{Binding SelectedItem.Tweak.Description}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                <TextBlock Text="{Binding SelectedItem.GainLine}" Foreground="{StaticResource GreenBrush}" TextWrapping="Wrap" />
                                 <TextBlock Text="{Binding SelectedItem.Note}" Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap"
                                            Visibility="{Binding SelectedItem.HasNote, Converter={StaticResource BoolToVis}}" />
                                 <TextBlock Text="{Binding SelectedItem.Details}" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"
@@ -390,6 +432,21 @@
                         <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="u  desfazer último lote" Command="{Binding UndoLastCommand}" />
                         <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="r  reler" Command="{Binding RefreshCommand}" />
                     </StackPanel>
+                </Grid>
+
+                <!-- ── Confirmação da troca de taxa do monitor (volta sozinho em 15 s) ── -->
+                <Grid Grid.ColumnSpan="2" Background="{StaticResource OverlayBrush}"
+                      Visibility="{Binding ShowKeepDisplay, Converter={StaticResource BoolToVis}}">
+                    <Border Width="460" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{StaticResource BgBrush}"
+                            BorderBrush="{StaticResource GreenBrush}" BorderThickness="1" CornerRadius="6" Padding="20,16">
+                        <StackPanel>
+                            <TextBlock Text="{Binding KeepDisplayText}" Foreground="{StaticResource BrightBrush}" FontSize="14" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                <Button Style="{StaticResource PrimaryButton}" Padding="14,5" Content="enter  manter" Command="{Binding KeepDisplayCommand}" />
+                                <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="esc  voltar" Command="{Binding RevertDisplayCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
                 <!-- ── Confirmação (Aplicar tudo) ── -->

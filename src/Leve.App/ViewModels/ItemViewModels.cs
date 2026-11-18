@@ -43,8 +43,8 @@ public sealed class TweakItemVm : ObservableObject
 
     public string StatusLabel => Status switch
     {
-        TweakStatus.On => "ON",
-        TweakStatus.Off => "off",
+        TweakStatus.On => "feito",
+        TweakStatus.Off => "pendente",
         TweakStatus.Partial => "parcial",
         TweakStatus.NotPresent => "n/a",
         _ => "?",
@@ -66,6 +66,13 @@ public sealed class TweakItemVm : ObservableObject
     public string MetaLine =>
         $"{AreaLabel} · risco {RiskLabel} · {ProfilesLabel} · efeito: {Labels.Restart(Tweak.Restart)}";
 
+    /// <summary>Etiqueta curta da coluna "impacto": onde o ganho aparece e quão grande costuma ser.</summary>
+    public string ImpactLabel => Labels.Impact(Tweak.Impact, Tweak.Strength);
+
+    public bool IsBigImpact => Tweak.Strength >= 2 && (Tweak.Impact & (Impact.Fps | Impact.Lows | Impact.Latency | Impact.Loading)) != 0;
+
+    public string GainLine => Tweak.Gain is null ? string.Empty : "ganho típico: " + Tweak.Gain + " (estimativa; meça em > fps)";
+
     public string Details => string.Join(Environment.NewLine, Tweak.Actions.Select(a => "  " + a.Describe()));
 
     public string? Note => Tweak.Note is null ? null : "! " + Tweak.Note;
@@ -73,7 +80,7 @@ public sealed class TweakItemVm : ObservableObject
     public bool HasNote => Tweak.Note is not null;
 }
 
-public enum NavKind { Tweaks, Snapshots, Cleanup, Report, Fps }
+public enum NavKind { Tweaks, Snapshots, Cleanup, Report, Fps, Diagnostics }
 
 public sealed class NavItemVm(MainViewModel owner, string label, Area? area, NavKind kind, int count) : ObservableObject
 {
@@ -115,6 +122,21 @@ public sealed class CleanupItemVm(Leve.Windows.CleanupCategory category) : Obser
     }
 
     public string SizeText => Size is { } bytes ? Labels.Size(bytes) : "medindo…";
+}
+
+public sealed class DiagnosticItemVm(DiagnosticItem item)
+{
+    public DiagnosticItem Item { get; } = item;
+    public string Title => Item.Title;
+    public string Detail => Item.Detail;
+    public DiagnosticLevel Level => Item.Level;
+    public string Symbol => Item.Level switch
+    {
+        DiagnosticLevel.Ok => "✓",
+        DiagnosticLevel.Warn => "!",
+        _ => "·",
+    };
+    public bool CanFix => Item.FixTweakId is not null;
 }
 
 public sealed class SnapshotVm(Snapshot snapshot)

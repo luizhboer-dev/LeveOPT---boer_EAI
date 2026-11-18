@@ -171,6 +171,9 @@ public static class AgentCatalog
                       + "O agente usa ~0% de CPU (só acorda em troca de janela e ao fechar o jogo) e cerca de 20 MB de RAM.",
         Profiles = Profiles.All,
         Restart = Restart.None,
+        Impact = Impact.Lows,
+        Strength = 2,
+        Gain = "0–3% no FPS médio; melhora o 1% low quando navegador/sync estão ativos",
         Note = "sem administrador; só mexe nos processos da sua conta",
         Actions = [new SetValue(Target.Reg(HKCU, RunKey, RunValueName), StateValue.Text($"\"{agentExePath}\""))],
     };

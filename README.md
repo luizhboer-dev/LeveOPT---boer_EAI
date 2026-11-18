@@ -1,6 +1,24 @@
-# Leve 1.1 (em andamento)
+<p align="center"><img src="assets/leveopt-logo.svg" alt="LeveOPT — by boer_eAI" width="720"></p>
+
+# LeveOPT 1.2
+
+Otimizador de Windows 11 focado em jogos, por **boer_eAI**. Ele é reversível, mostra o que mudou e mede o resultado.
+
+> **Uso por sua conta e risco.** O LeveOPT altera serviços, Registro, apps e energia do Windows. Tudo passa por snapshot e pode ser desfeito, mas teste primeiro numa VM ou num PC secundário. Os executáveis não têm assinatura digital.
+
+**Licença:** nenhuma, ou seja, todos os direitos reservados. O código está público para leitura. Copiar, redistribuir ou publicar versões modificadas exige autorização do autor.
 
 Otimizador de Windows 11 focado em desempenho para jogos. Tem um botão **Game Ultra**, que aplica tudo de uma vez, e um **snapshot** que permite desfazer o lote inteiro. O plano completo está em [PLANO-LEVE-1.0.md](PLANO-LEVE-1.0.md).
+
+## v1.2: diagnóstico e etiquetas de impacto
+
+- **Coluna "impacto"** em cada ajuste, mostrando onde o ganho aparece e quão grande costuma ser, com a faixa típica no detalhe. O estado agora aparece como **feito / pendente**.
+- **`> diagnóstico`:**
+  - monitor abaixo da taxa nativa, com o botão **corrigir**, confirmação manter/voltar e volta automática em 15 s;
+  - RAM sem XMP/EXPO e em canal único;
+  - sugestão de limite de FPS;
+  - driver de vídeo antigo;
+  - disco quase cheio.
 
 ## Gerar o instalador (para distribuir entre amigos)
 

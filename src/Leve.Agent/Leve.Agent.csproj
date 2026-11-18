@@ -10,6 +10,7 @@
     <AssemblyName>Leve.Agent</AssemblyName>
     <RootNamespace>Leve.Agent</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\assets\leveopt.ico</ApplicationIcon>
 
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>

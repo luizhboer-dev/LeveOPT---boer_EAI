@@ -144,6 +144,8 @@ public static class DynamicCatalog
                     _ => Profiles.None,
                 },
                 Restart = Restart.Logoff,
+                Impact = Impact.Ram | Impact.Lows,
+                Gain = "menos RAM ocupada e nada disputando o início da sessão; ≈0% no FPS médio",
                 Note = kind switch
                 {
                     StartupClass.CloudSync => "sincronização só roda com o app aberto (por isso não vem marcado)",
@@ -190,6 +192,8 @@ public static class DynamicCatalog
                 Title = $"{rule.Title}: {Shorten(name, 48)}",
                 Area = Area.Startup,
                 Description = "Tarefa agendada que acorda em segundo plano para buscar atualização. O app continua se atualizando quando você abre.",
+                Impact = Impact.Lows,
+                Gain = "nada acordando para baixar no meio da partida",
                 Profiles = Profiles.All,
                 Actions = [new SetValue(Target.ScheduledTask(path), StateValue.TaskState(false))],
             });
@@ -221,6 +225,9 @@ public static class DynamicCatalog
             Risk = Risk.Medium,
             Profiles = Profiles.None,
             OptIn = true,
+            Impact = Impact.Loading | Impact.Lows,
+            Strength = 2,
+            Gain = "carregamento mais rápido e menos stutter de shader; não muda o FPS médio",
             Note = "arquivos dessas pastas não são escaneados ao abrir; a varredura agendada e o SmartScreen continuam",
             Actions = safe.Select(f => (TweakAction)new SetValue(Target.DefenderExclusion(f), StateValue.Flag(true))).ToList(),
         };

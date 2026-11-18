@@ -5,7 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Permite compilar os projetos Windows a partir de Linux/macOS. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <Version>1.0.0-m1</Version>
-    <Product>Leve</Product>
+    <Version>1.2.0</Version>
+    <Product>LeveOPT</Product>
+    <Company>boer_eAI</Company>
+    <Copyright>LeveOPT by boer_eAI</Copyright>
   </PropertyGroup>
 </Project>

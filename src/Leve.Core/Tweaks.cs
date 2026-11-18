@@ -17,6 +17,21 @@ public enum Restart { None, AppRestart, Logoff, Reboot }
 
 public enum TweakStatus { Unknown, Off, Partial, On, NotPresent }
 
+/// <summary>Onde o ganho aparece. FPS = média; Lows = 1% low/engasgos; Comfort = uso/sensação, não desempenho.</summary>
+[Flags]
+public enum Impact
+{
+    None = 0,
+    Fps = 1,
+    Lows = 2,
+    Latency = 4,
+    Ram = 8,
+    Loading = 16,
+    Network = 32,
+    Privacy = 64,
+    Comfort = 128,
+}
+
 /// <summary>Fatos da máquina usados para esconder ajustes que não se aplicam.</summary>
 public sealed record SystemFacts
 {
@@ -109,6 +124,15 @@ public sealed record Tweak
     /// aparece como caixa separada na confirmação e só entra se o usuário marcar.
     /// </summary>
     public bool OptIn { get; init; }
+
+    /// <summary>Onde o ganho aparece (etiqueta na lista).</summary>
+    public Impact Impact { get; init; }
+
+    /// <summary>Intensidade típica: 1 = pequena, 2 = média, 3 = grande.</summary>
+    public int Strength { get; init; } = 1;
+
+    /// <summary>Faixa típica observada em testes públicos. É estimativa, não promessa: o número real vem da tela > fps.</summary>
+    public string? Gain { get; init; }
 
     public bool IsApplicable(SystemFacts facts) => AppliesTo?.Invoke(facts) ?? true;
 
