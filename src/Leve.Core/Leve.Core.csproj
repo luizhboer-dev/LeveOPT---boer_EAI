@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Núcleo sem dependência de Windows: modelo, catálogo, motor e snapshots. Testável em qualquer SO. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Leve.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Leve.Core.Tests" />
+  </ItemGroup>
+
+</Project>

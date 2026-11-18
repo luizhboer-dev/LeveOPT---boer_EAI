@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Agente do Modo Jogo dinâmico. Sem WPF, sem janela, sem administrador.
+    Orientado a eventos: dorme em MsgWaitForMultipleObjects e só acorda em troca de janela ou quando o jogo fecha.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>Leve.Agent</AssemblyName>
+    <RootNamespace>Leve.Agent</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <DebugType>embedded</DebugType>
+
+    <!-- Pegada mínima: sem dados de cultura, GC de estação sem thread de fundo. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Leve.Core\Leve.Core.csproj" />
+  </ItemGroup>
+
+</Project>

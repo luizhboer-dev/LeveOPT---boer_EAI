@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Primitivas nativas do Windows: Registro, SCM, Task Scheduler (COM), métricas e fatos da máquina. Sem PowerShell. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Leve.Windows</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Leve.Core\Leve.Core.csproj" />
+  </ItemGroup>
+
+</Project>

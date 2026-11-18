@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Leve.Core/Leve.Core.csproj" />
+    <Project Path="src/Leve.Windows/Leve.Windows.csproj" />
+    <Project Path="src/Leve.App/Leve.App.csproj" />
+    <Project Path="src/Leve.Agent/Leve.Agent.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Leve.Core.Tests/Leve.Core.Tests.csproj" />
+  </Folder>
+</Solution>

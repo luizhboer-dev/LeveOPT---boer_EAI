@@ -1,0 +1,453 @@
+<Window x:Class="Leve.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Leve" Width="1120" Height="740" MinWidth="880" MinHeight="580"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgBrush}" Foreground="{StaticResource FgBrush}"
+        FontFamily="{StaticResource Mono}" FontSize="13"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="34" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Linha de ajuste: [x]  título  módulo  risco  estado -->
+        <DataTemplate x:Key="TweakRow">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="64" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Style="{StaticResource TermCheck}" IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}" />
+                <TextBlock Grid.Column="1" Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="2" Text="{Binding AreaLabel}" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock x:Name="RiskText" Grid.Column="3" Text="{Binding RiskLabel}" Foreground="{StaticResource GreenBrush}" />
+                <TextBlock x:Name="StateText" Grid.Column="4" Text="{Binding StatusLabel}" Foreground="{StaticResource MutedBrush}" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Risk}" Value="Medium">
+                    <Setter TargetName="RiskText" Property="Foreground" Value="{StaticResource AmberBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Risk}" Value="High">
+                    <Setter TargetName="RiskText" Property="Foreground" Value="{StaticResource RedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="On">
+                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource GreenBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Partial">
+                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource AmberBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Unknown">
+                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource RedBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="LogRow">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Time, StringFormat=HH:mm:ss}" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock x:Name="Symbol" Text="  ·  " Foreground="{StaticResource MutedBrush}" />
+                <TextBlock Text="{Binding Text}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="Ok">
+                    <Setter TargetName="Symbol" Property="Text" Value="  ✓  " />
+                    <Setter TargetName="Symbol" Property="Foreground" Value="{StaticResource GreenBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Warn">
+                    <Setter TargetName="Symbol" Property="Text" Value="  ~  " />
+                    <Setter TargetName="Symbol" Property="Foreground" Value="{StaticResource AmberBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Error">
+                    <Setter TargetName="Symbol" Property="Text" Value="  ✗  " />
+                    <Setter TargetName="Symbol" Property="Foreground" Value="{StaticResource RedBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="CleanupRow">
+            <Grid Margin="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="110" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Style="{StaticResource TermCheck}" IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Top" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" />
+                    <TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="{Binding SizeText}" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Right" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ReportRowTemplate">
+            <Grid Margin="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="230" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="120" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Label}" Foreground="{StaticResource BrightBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Before}" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="2" Text="{Binding After}" HorizontalAlignment="Right" />
+                <TextBlock x:Name="DeltaText" Grid.Column="3" Text="{Binding Delta}" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Trend}" Value="Better">
+                    <Setter TargetName="DeltaText" Property="Foreground" Value="{StaticResource GreenBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Trend}" Value="Worse">
+                    <Setter TargetName="DeltaText" Property="Foreground" Value="{StaticResource RedBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SnapshotRow">
+            <Grid Margin="0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="110" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding IdText}" Foreground="{StaticResource GreenBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding When}" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding Label}" Foreground="{StaticResource BrightBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding CountText}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding StatusText}" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                <Button Grid.Column="5" Style="{StaticResource TermButton}" Content="desfazer"
+                        Visibility="{Binding CanRevert, Converter={StaticResource BoolToVis}}"
+                        Command="{Binding DataContext.RevertSnapshotCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Border x:Name="Root" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="150" />
+            </Grid.RowDefinitions>
+
+            <!-- ── Barra de título + status ao vivo ── -->
+            <Border Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="●" Foreground="{StaticResource GreenBrush}" />
+                        <TextBlock Text=" leve" Foreground="{StaticResource BrightBrush}" />
+                        <TextBlock Text=" v1.0-m1" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Text="   perfil: " Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Text="{Binding ProfileLabel}" Foreground="{StaticResource BrightBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding AgentText}" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,18,0" />
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
+                            <TextBlock Text="CPU " Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Text="{Binding Cpu}" Foreground="{StaticResource GreenBrush}" MinWidth="34" />
+                            <TextBlock Text="  RAM " Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Text="{Binding Ram}" Foreground="{StaticResource AmberBrush}" />
+                            <TextBlock Text="  proc " Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Text="{Binding Procs}" Foreground="{StaticResource BrightBrush}" />
+                        </StackPanel>
+                        <Button Style="{StaticResource CaptionButton}" Content="—" Click="OnMinimize" ToolTip="minimizar" />
+                        <Button Style="{StaticResource CaptionButton}" Content="□" Click="OnMaximize" ToolTip="maximizar" />
+                        <Button Style="{StaticResource CloseButton}" Content="✕" Click="OnClose" ToolTip="fechar" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ── Corpo ── -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Módulos -->
+                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,1,0">
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="MÓDULOS" Foreground="{StaticResource MutedBrush}" Margin="12,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding Nav}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Style="{StaticResource NavRadio}" GroupName="nav"
+                                                 IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                                        <TextBlock Text="{Binding Display}" />
+                                    </RadioButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Área principal -->
+                <Grid Grid.Column="1" Margin="16,10,14,8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho + filtro -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Header}" Foreground="{StaticResource MutedBrush}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="18,0,0,0" Visibility="{Binding ShowList, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="/ " Foreground="{StaticResource GreenBrush}" />
+                            <TextBox x:Name="FilterBox" Style="{StaticResource TermTextBox}" MinWidth="220"
+                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding BusyText}" Foreground="{StaticResource AmberBrush}" />
+                    </Grid>
+
+                    <!-- Perfis -->
+                    <Grid Grid.Row="1" Margin="0,12,0,10" Visibility="{Binding ShowList, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <RadioButton Style="{StaticResource ProfileRadio}" GroupName="profile" IsChecked="{Binding IsUltra, Mode=TwoWay}" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Game Ultra" Foreground="{StaticResource GreenBrush}" />
+                                <TextBlock Foreground="{StaticResource MutedBrush}">
+                                    <Run Text="tudo marcado · " /><Run Text="{Binding UltraCount, Mode=OneWay}" /><Run Text=" ajustes" />
+                                </TextBlock>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Grid.Column="1" Style="{StaticResource ProfileRadio}" GroupName="profile" IsChecked="{Binding IsDev, Mode=TwoWay}" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Gamer + Dev" Foreground="{StaticResource BrightBrush}" />
+                                <TextBlock Foreground="{StaticResource MutedBrush}">
+                                    <Run Text="mantém busca/spooler · " /><Run Text="{Binding DevCount, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Grid.Column="2" Style="{StaticResource ProfileRadio}" GroupName="profile" IsChecked="{Binding IsManual, Mode=TwoWay}" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Manual" Foreground="{StaticResource BrightBrush}" />
+                                <TextBlock Text="você escolhe um a um" Foreground="{StaticResource MutedBrush}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <Button Grid.Column="3" Style="{StaticResource PrimaryButton}" Padding="16,6" Command="{Binding UltraNowCommand}"
+                                ToolTip="seleciona o Game Ultra e abre a confirmação">
+                            <StackPanel>
+                                <TextBlock Text="⚡ GAME ULTRA" />
+                                <TextBlock Text="aplicar tudo" FontSize="11" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Cabeçalho da tabela -->
+                    <Grid Grid.Row="2" Margin="6,0,6,4" Visibility="{Binding ShowList, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="110" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="64" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="1" Text="ajuste" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="2" Text="módulo" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="3" Text="risco" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Grid.Column="4" Text="estado" Foreground="{StaticResource MutedBrush}" />
+                    </Grid>
+
+                    <!-- Lista de ajustes -->
+                    <ListBox x:Name="ItemsList" Grid.Row="3"
+                             ItemsSource="{Binding ItemsView}"
+                             SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                             ItemTemplate="{StaticResource TweakRow}"
+                             ItemContainerStyle="{StaticResource TermItem}"
+                             Visibility="{Binding ShowList, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Lista de snapshots -->
+                    <ListBox Grid.Row="2" Grid.RowSpan="2"
+                             ItemsSource="{Binding Snapshots}"
+                             ItemTemplate="{StaticResource SnapshotRow}"
+                             ItemContainerStyle="{StaticResource TermItem}"
+                             Visibility="{Binding ShowSnapshots, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- FPS: deliberadamente mínimo. Nada sobre o jogo; só o resultado no fim. -->
+                    <StackPanel Grid.Row="1" Grid.RowSpan="3" Margin="0,12,0,0" Visibility="{Binding ShowFps, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="jogo  " Foreground="{StaticResource MutedBrush}" />
+                            <TextBox Style="{StaticResource TermTextBox}" MinWidth="200" Text="{Binding FpsGame, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="    duração  " Foreground="{StaticResource MutedBrush}" />
+                            <TextBox Style="{StaticResource TermTextBox}" MinWidth="36" Text="{Binding FpsSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text=" s" Foreground="{StaticResource MutedBrush}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,14">
+                            <Button Style="{StaticResource TermButton}" Content="A  sem otimização" Command="{Binding CaptureACommand}" />
+                            <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="B  com otimização" Command="{Binding CaptureBCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding FpsLineA}" />
+                        <TextBlock Text="{Binding FpsLineB}" />
+                        <TextBlock Text="{Binding FpsVerdict}" Foreground="{StaticResource GreenBrush}" Margin="0,6,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                            <TextBlock Text="{Binding FpsStatus}" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <Button Style="{StaticResource TermButton}" Margin="10,0,0,0" Padding="6,1" Content="baixar" Command="{Binding OpenPresentMonPageCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Relatório de antes e depois -->
+                    <StackPanel Grid.Row="1" Grid.RowSpan="3" Margin="0,12,0,0" Visibility="{Binding ShowReport, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding ReportInfo}" Foreground="{StaticResource MutedBrush}" />
+                        <Grid Margin="0,12,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="230" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="métrica" Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock Grid.Column="1" Text="antes" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="agora" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="diferença" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding ReportRows}" ItemTemplate="{StaticResource ReportRowTemplate}" />
+                        <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,0"
+                                   Text="compare em condições parecidas: alguns minutos depois de ligar o PC, com os mesmos programas abertos. FPS e frametime entram na v1.1 (PresentMon)." />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Style="{StaticResource PrimaryButton}" Content="r  medir agora" Command="{Binding MeasureReportCommand}" />
+                            <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="usar agora como referência" Command="{Binding SetBaselineCommand}" />
+                            <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="copiar relatório" Command="{Binding CopyReportCommand}" />
+                        </StackPanel>
+
+                        <Border Margin="0,22,0,0" Padding="12,10" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="3">
+                            <StackPanel>
+                                <TextBlock Text="Dev Drive (perfil Dev)" Foreground="{StaticResource BrightBrush}" />
+                                <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8"
+                                           Text="volume ReFS em que o Defender roda em modo desempenho. Bom para repositórios, node_modules e caches de build (em geral 20 a 30% mais rápido). O Leve não cria volumes sozinho: abre a tela do Windows." />
+                                <Button Style="{StaticResource TermButton}" HorizontalAlignment="Left" Content="criar Dev Drive (Configurações)" Command="{Binding OpenDevDriveCommand}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Limpeza de disco -->
+                    <Grid Grid.Row="1" Grid.RowSpan="3" Margin="0,12,0,0" Visibility="{Binding ShowCleanup, Converter={StaticResource BoolToVis}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ListBox ItemsSource="{Binding CleanupItems}" ItemTemplate="{StaticResource CleanupRow}"
+                                 ItemContainerStyle="{StaticResource TermItem}" />
+                        <StackPanel Grid.Row="1" Margin="0,10,0,0">
+                            <TextBlock Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"
+                                       Text="nunca apagamos: Prefetch e cache de shaders (DirectX/NVIDIA/AMD) — apagar causa recompilação e stutter. limpeza não entra no snapshot: não tem volta." />
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Style="{StaticResource PrimaryButton}" Content="limpar marcados" Command="{Binding CleanCommand}" />
+                                <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="r  medir de novo" Command="{Binding RefreshCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Detalhe do item selecionado -->
+                    <Border Grid.Row="4" Margin="0,8,0,0" Padding="10,8" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="3"
+                            Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedItem.Title}" Foreground="{StaticResource BrightBrush}" />
+                                <TextBlock Text="{Binding SelectedItem.MetaLine}" Foreground="{StaticResource MutedBrush}" />
+                                <TextBlock Text="{Binding SelectedItem.Tweak.Description}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                <TextBlock Text="{Binding SelectedItem.Note}" Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap"
+                                           Visibility="{Binding SelectedItem.HasNote, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding SelectedItem.Details}" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxHeight="96" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Style="{StaticResource TermButton}" VerticalAlignment="Top"
+                                    Content="desfazer este ajuste" Command="{Binding UndoSelectedCommand}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Barra de ações -->
+                    <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding ShowList, Converter={StaticResource BoolToVis}}">
+                        <Button Style="{StaticResource PrimaryButton}" Content="{Binding ApplyLabel}" Command="{Binding ApplyCommand}" />
+                        <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="a  marcar todos" Command="{Binding CheckAllCommand}" />
+                        <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="x  desmarcar" Command="{Binding UncheckAllCommand}" />
+                        <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="u  desfazer último lote" Command="{Binding UndoLastCommand}" />
+                        <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="r  reler" Command="{Binding RefreshCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- ── Confirmação (Aplicar tudo) ── -->
+                <Grid Grid.ColumnSpan="2" Background="{StaticResource OverlayBrush}"
+                      Visibility="{Binding ShowConfirm, Converter={StaticResource BoolToVis}}">
+                    <Border Width="640" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{StaticResource BgBrush}"
+                            BorderBrush="{StaticResource GreenBrush}" BorderThickness="1" CornerRadius="6" Padding="20,16">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ConfirmTitle}" Foreground="{StaticResource BrightBrush}" FontSize="14" />
+                            <TextBlock Text="{Binding ConfirmBody}" Margin="0,10,0,14" TextWrapping="Wrap" LineHeight="20" />
+                            <Border Margin="0,0,0,14" Padding="10,8" BorderBrush="{StaticResource RedDeepBrush}" BorderThickness="1" CornerRadius="3"
+                                    Visibility="{Binding HasOptIns, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock Text="segurança × desempenho: só entram se você marcar" Foreground="{StaticResource RedBrush}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding OptInItems}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,3">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="36" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Style="{StaticResource TermCheck}" IsChecked="{Binding IsChecked, Mode=TwoWay}" VerticalAlignment="Top" />
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Title}" Foreground="{StaticResource BrightBrush}" TextWrapping="Wrap" />
+                                                        <TextBlock Text="{Binding Tweak.Description}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                        <TextBlock Text="{Binding Note}" Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource PrimaryButton}" Padding="14,5" Content="enter  aplicar tudo" Command="{Binding ConfirmApplyCommand}" />
+                                <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="e  editar lista" Command="{Binding CancelConfirmCommand}" />
+                                <Button Style="{StaticResource TermButton}" Margin="8,0,0,0" Content="esc  cancelar" Command="{Binding CancelConfirmCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding ConfirmFooter}" Foreground="{StaticResource MutedBrush}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- ── Log de execução ── -->
+            <Border Grid.Row="2" Background="{StaticResource DeepBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0">
+                <Grid Margin="14,6,10,6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ListBox x:Name="LogList" ItemsSource="{Binding Log}" ItemTemplate="{StaticResource LogRow}"
+                             ItemContainerStyle="{StaticResource LogItem}" Focusable="False" />
+                    <TextBlock Grid.Row="1" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0"
+                               Text="espaço marcar · enter aplicar · a todos · / filtrar · p perfil · u desfazer · r reler · ? ajuda" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
